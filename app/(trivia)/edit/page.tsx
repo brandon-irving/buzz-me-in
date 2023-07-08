@@ -1,5 +1,5 @@
 import { TriviaBoard } from "../../components/TriviaBoard";
 
 export default function Edit() {
-  return <TriviaBoard />;
+  return <TriviaBoard isEdit />;
 }

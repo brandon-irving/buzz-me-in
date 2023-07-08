@@ -1,3 +1,9 @@
+import { TriviaBoard } from "@/app/components/TriviaBoard";
+
 export default function Game() {
-  return "Game";
+  return (
+    <>
+      <TriviaBoard />
+    </>
+  );
 }
