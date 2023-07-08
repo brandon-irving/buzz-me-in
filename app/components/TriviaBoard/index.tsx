@@ -49,6 +49,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const [state, dispatch] = useReducer(
     reducer,
     // quickGame
+    // familyGame
     JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
   );
   const {
@@ -489,7 +490,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                         {rows[selectedCell.rowIndex][selectedCell.colIndex]
                           .doublePoints && <Heading>DAILY DOUBLE!</Heading>}
 
-                        <Heading fontSize={"7xl"}>
+                        <Heading textAlign={"center"} fontSize={"7xl"}>
                           {showAnswer
                             ? rows[selectedCell.rowIndex][selectedCell.colIndex]
                                 .answer
@@ -569,7 +570,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
               Clear
             </Button>
             <Button variant="ghost" mr={3} onClick={editModal.onClose}>
-              Close
+              Save
             </Button>
           </ModalFooter>
         </ModalContent>

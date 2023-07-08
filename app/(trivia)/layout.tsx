@@ -1,5 +1,5 @@
 "use client";
-import { ChakraProvider } from "@chakra-ui/react";
+import { Box, ChakraProvider } from "@chakra-ui/react";
 import { theme } from "../core/theme";
 
 export default function RootLayout({
@@ -7,5 +7,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
+  return (
+    <ChakraProvider theme={theme}>
+      <Box h="100vh" bg="primary.900">
+        {children}
+      </Box>
+    </ChakraProvider>
+  );
 }
