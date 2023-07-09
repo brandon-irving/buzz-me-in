@@ -304,19 +304,23 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
       <Grid
         h="100vh"
         w="100vw"
-        templateColumns={`0.25fr repeat(${columns}, 1fr)`}
+        templateColumns={
+          isEdit ? `0.25fr repeat(${columns}, 1fr)` : `repeat(${columns}, 1fr)`
+        }
         gap={0}
         p={5}
         color={`primary.500`} // use the primary color for text
         bg={`primary.900`} // use the primary color for text
       >
         {/* Placeholder box for top left corner */}
-        <Box>
-          <ButtonGroup>
-            <Button onClick={handleEndGame}>End Game</Button>
-            <Button onClick={handleCopyGame}>Copy Game</Button>
-          </ButtonGroup>
-        </Box>
+        {isEdit && (
+          <Box>
+            <ButtonGroup>
+              <Button onClick={handleEndGame}>End Game</Button>
+              <Button onClick={handleCopyGame}>Copy Game</Button>
+            </ButtonGroup>
+          </Box>
+        )}
         {columnCategories.map((category: string, colIndex: number) => (
           <GridItem key={`column-label-${colIndex}`} p={5}>
             <Flex justifyContent="center" alignItems="center" h="100%">
@@ -339,24 +343,31 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
           </GridItem>
         ))}
         {rows.map((row: ICell[], rowIndex: number) => [
-          <GridItem key={`row-label-${rowIndex}`} p={5}>
-            <Editable
-              isDisabled={!isEdit}
-              color={"white"}
-              defaultValue={`${rowPoints[rowIndex]}`}
+          isEdit && (
+            <GridItem
+              id={`points-gridItem-${rowIndex}`}
+              key={`row-label-${rowIndex}`}
+              p={5}
             >
-              <EditablePreview />
-              <EditableInput
-                type="number"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleRowPointsChange(e, rowIndex);
-                  }
-                }}
-                onBlur={(e) => handleRowPointsChange(e, rowIndex)}
-              />
-            </Editable>
-          </GridItem>,
+              <Editable
+                id={`points-editable-${rowIndex}`}
+                isDisabled={!isEdit}
+                color={"white"}
+                defaultValue={`${rowPoints[rowIndex]}`}
+              >
+                <EditablePreview />
+                <EditableInput
+                  type="number"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleRowPointsChange(e, rowIndex);
+                    }
+                  }}
+                  onBlur={(e) => handleRowPointsChange(e, rowIndex)}
+                />
+              </Editable>
+            </GridItem>
+          ),
           ...row.map((cell: ICell, colIndex: number) => {
             const isAnswered = !!cell.answeredBy;
             return (
@@ -401,33 +412,28 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
             );
           }),
         ])}
-        <>
-          {!isEdit && (
-            <HStack>
-              <Icon name="plus" onClick={handleAddTeam} />
-            </HStack>
-          )}
-          {!isEdit &&
-            teams.map((team, index) => {
-              return (
-                <HStack>
-                  <Icon
-                    name="minus"
-                    onClick={() => handleSubtractTeam(index)}
-                  />
-                  <Team
-                    name={team.name}
-                    score={team.score}
-                    onNameChange={(name) => onTeamNameChange({ index, name })}
-                    onScoreChange={(score, type) =>
-                      onTeamScoreChange({ index, score, type })
-                    }
-                    points={rowPoints[selectedCell.rowIndex || 0] || 100}
-                  />
-                </HStack>
-              );
-            })}
-        </>
+        {!isEdit && (
+          <HStack>
+            <Icon name="plus" onClick={handleAddTeam} />
+          </HStack>
+        )}
+        {!isEdit &&
+          teams.map((team, index) => {
+            return (
+              <HStack>
+                <Icon name="minus" onClick={() => handleSubtractTeam(index)} />
+                <Team
+                  name={team.name}
+                  score={team.score}
+                  onNameChange={(name) => onTeamNameChange({ index, name })}
+                  onScoreChange={(score, type) =>
+                    onTeamScoreChange({ index, score, type })
+                  }
+                  points={rowPoints[selectedCell.rowIndex || 0] || 100}
+                />
+              </HStack>
+            );
+          })}
         {isEdit && (
           <Box>
             <button onClick={addRow}>Add Row</button>
