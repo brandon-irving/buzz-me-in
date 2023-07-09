@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useCallback, useEffect, useReducer, useState } from "react";
 import {
   Grid,
   GridItem,
@@ -44,13 +44,17 @@ import {
 import { useRouter } from "next/navigation";
 import { copyToClipboard } from "@/app/core/helpers";
 import { familyGame, quickGame } from "@/app/core/games";
+import GameHelperText from "../GameHelperText";
+import useOnKeyPress from "@/app/core/hooks/useOnKeyPress";
+import { useGameTimer } from "@/app/core/hooks/useGameTimer";
+import CommandsList from "../CommandsList";
 
 export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const [state, dispatch] = useReducer(
     reducer,
     // quickGame
-    // familyGame
-    JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
+    familyGame
+    // JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
   );
   const {
     selectedCell,
@@ -59,7 +63,15 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     columnCategories,
     rowPoints,
     rows,
-  } = state;
+  } = state as {
+    selectedCell: ISelectedCell;
+    hoveredCell: IHoveredCell;
+    columns: number;
+    columnCategories: string[];
+    rowPoints: number[];
+    rows: ICell[][];
+  };
+
   const setRows = (rows: Array<Array<ICell>>) =>
     dispatch({ type: "SET_ROWS", payload: rows });
   const setRowPoints = (rowPoints: Array<number>) =>
@@ -82,9 +94,28 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   const editModal = useDisclosure();
   const jeopardyCardModal = useDisclosure();
-  const router = useRouter();
   const toast = useToast();
+  const { startTimer, timer, pauseTime, restartTimer } = useGameTimer({
+    time: 15,
+  });
 
+  useOnKeyPress({ key: "s", onPress: handleStartTimer });
+  useOnKeyPress({ key: "p", onPress: pauseTime });
+  useOnKeyPress({ key: "r", onPress: restartTimer });
+
+  const currentCellCb = useCallback(() => {
+    return selectedCell.rowIndex !== null && selectedCell.colIndex !== null
+      ? rows[selectedCell.rowIndex][selectedCell.colIndex]
+      : null;
+  }, [selectedCell]);
+
+  const currentCell = currentCellCb();
+  console.log(currentCell);
+
+  function handleStartTimer() {
+    startTimer();
+    // TODO:
+  }
   function onTeamNameChange({ name, index }: { name: string; index: number }) {
     const newTeams = [...teams];
     newTeams[index].name = name;
@@ -94,13 +125,20 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   function onTeamScoreChange({
     score,
     index,
+    type,
   }: {
     score: number;
     index: number;
+    type: "increment" | "decrement";
   }) {
     const newTeams = [...teams];
     newTeams[index].score = score + newTeams[index].score;
     setTeams(newTeams);
+    // TODO:
+    if (type === "increment") {
+      handleAnsweredByChange({ index });
+    } else {
+    }
   }
 
   function toggleShowAnswer() {
@@ -108,31 +146,23 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   }
 
   function handleTriviaClose() {
+    const row: ICell =
+      rows[selectedCell.rowIndex as number][selectedCell.colIndex as number];
+    if (!row.answeredBy && showAnswer) {
+      handleAnsweredByChange({ index: null });
+    }
     setShowAnswer(false);
     jeopardyCardModal.onClose();
   }
 
-  function handleAnsweredByChange({ index }: { index: number }) {
+  function handleAnsweredByChange({ index }: { index: number | null }) {
     const { rowIndex, colIndex } = selectedCell;
     const newRows = JSON.parse(JSON.stringify(rows));
     if (rowIndex !== null && colIndex !== null) {
-      newRows[rowIndex][colIndex].answeredBy = teams[index].name;
+      newRows[rowIndex][colIndex].answeredBy =
+        index === null ? "Noone" : teams[index].name;
     }
     setRows(newRows);
-  }
-
-  function handleGiveTeamPoints({ index }: { index: number }) {
-    onTeamScoreChange({
-      index,
-      score:
-        (selectedCell.score || 100) *
-        // @ts-ignore
-        (rows[selectedCell.rowIndex][selectedCell.colIndex].doublePoints
-          ? 2
-          : 1),
-    });
-    handleAnsweredByChange({ index });
-    jeopardyCardModal.onClose();
   }
 
   const addRow = () => {
@@ -166,10 +196,14 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     colIndex: number;
     rowIndex: number;
   }) => {
+    const cell = rows[rowIndex][colIndex] as ICell;
     setSelectedCell({ rowIndex, colIndex, score: rowPoints[rowIndex] });
     if (isEdit) {
       editModal.onOpen();
     } else {
+      if (cell.doublePoints) {
+        // TODO: add sound
+      }
       jeopardyCardModal.onOpen();
     }
   };
@@ -177,9 +211,9 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   function handleRowPointsChange(e: any, index: number) {
     const newRowPoints = [...rowPoints];
     newRowPoints[index] = e.target.value;
-    console.log(newRowPoints);
     setRowPoints(newRowPoints);
   }
+
   function handleClearForm() {
     const { rowIndex, colIndex } = selectedCell;
     const newRows = JSON.parse(JSON.stringify(rows));
@@ -214,7 +248,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   function handleCategoryChange(e: any, index: number) {
     const newCategories = [...columnCategories];
-    console.log({ c: e.target.value.length });
     newCategories[index] = !e.target.value.length ? "Category" : e.target.value;
     setColumnCategories(newCategories);
   }
@@ -271,7 +304,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
       <Grid
         h="100vh"
         w="100vw"
-        // w="75%"
         templateColumns={`0.25fr repeat(${columns}, 1fr)`}
         gap={0}
         p={5}
@@ -296,7 +328,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                 <EditablePreview />
                 <EditableInput
                   onKeyDown={(e) => {
-                    console.log(e.key);
                     if (e.key === "Enter") {
                       handleCategoryChange(e, colIndex);
                     }
@@ -318,7 +349,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
               <EditableInput
                 type="number"
                 onKeyDown={(e) => {
-                  console.log(e.key);
                   if (e.key === "Enter") {
                     handleRowPointsChange(e, rowIndex);
                   }
@@ -389,8 +419,8 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                     name={team.name}
                     score={team.score}
                     onNameChange={(name) => onTeamNameChange({ index, name })}
-                    onScoreChange={(score) =>
-                      onTeamScoreChange({ index, score })
+                    onScoreChange={(score, type) =>
+                      onTeamScoreChange({ index, score, type })
                     }
                     points={rowPoints[selectedCell.rowIndex || 0] || 100}
                   />
@@ -418,38 +448,24 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
           <ModalHeader>
             <ModalCloseButton autoFocus={false} />
             <VStack>
-              <Heading position={"absolute"} left={10}>
-                Press space to show answer
-              </Heading>
-              <Box color="white" position={"absolute"} left={10} top={62}>
-                <UnorderedList>
-                  {[
-                    `Press the "Team answered" button to mark the question as
-                  answered`,
-                    `Increment points for the team that answered correctly`,
-                    `Decrement points for any team that answered incorrectly`,
-                    `Press "esc" or the "x" button to close`,
-                  ].map((t) => (
-                    <ListItem key={t}>{t}</ListItem>
-                  ))}
-                </UnorderedList>
-              </Box>
+              <GameHelperText />
 
               <HStack w="100%" justifyContent={"flex-end"} mr={10}>
                 {teams.map((team, index) => {
                   return (
                     <VStack key={`${team.name}${index}`}>
-                      <Button onClick={() => handleAnsweredByChange({ index })}>
-                        {team.name} answered!
-                      </Button>
                       <Team
                         name={team.name}
                         score={team.score}
+                        onTeamAnswered={() => {
+                          handleAnsweredByChange({ index });
+                        }}
                         onNameChange={(name) =>
                           onTeamNameChange({ index, name })
                         }
-                        onScoreChange={(score) =>
+                        onScoreChange={(score, type) =>
                           onTeamScoreChange({
+                            type,
                             index,
                             score:
                               score *
@@ -468,48 +484,45 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                 })}
               </HStack>
             </VStack>
-
-            <VStack></VStack>
           </ModalHeader>
 
-          <ModalBody>
-            <Flex
-              position={"absolute"}
-              direction="column"
-              justifyContent="center"
-              alignItems="center"
-              h="60%"
-              w="100%"
-              whiteSpace={"pre"}
-            >
+          <ModalBody
+            id="main-title-modal-body"
+            display={"flex"}
+            justifyContent={"center"}
+            textAlign={"center"}
+          >
+            <Flex id="main-title-flex" mt={"6%"}>
               {!isEdit && (
                 <>
                   {selectedCell.rowIndex !== null &&
                     selectedCell.colIndex !== null && (
-                      <>
-                        {rows[selectedCell.rowIndex][selectedCell.colIndex]
-                          .doublePoints && <Heading>DAILY DOUBLE!</Heading>}
+                      <VStack>
+                        {currentCell?.doublePoints && (
+                          <Heading>DAILY DOUBLE!</Heading>
+                        )}
+                        <Box id="main-title-box">
+                          <Heading id="main-title" fontSize={"6xl"}>
+                            {showAnswer
+                              ? rows[selectedCell.rowIndex][
+                                  selectedCell.colIndex
+                                ].answer
+                              : rows[selectedCell.rowIndex][
+                                  selectedCell.colIndex
+                                ].question}
+                          </Heading>
+                        </Box>
+                        <Heading mt={10}>{timer}</Heading>
 
-                        <Heading textAlign={"center"} fontSize={"7xl"}>
-                          {showAnswer
-                            ? rows[selectedCell.rowIndex][selectedCell.colIndex]
-                                .answer
-                            : rows[selectedCell.rowIndex][selectedCell.colIndex]
-                                .question}
-                        </Heading>
                         <Heading mt={10}>{selectedCell.score}</Heading>
 
-                        <Heading>
-                          {
-                            rows[selectedCell.rowIndex][selectedCell.colIndex]
-                              .answeredBy
-                          }
-                        </Heading>
-                      </>
+                        <Heading>{currentCell?.answeredBy}</Heading>
+                      </VStack>
                     )}
                 </>
               )}
             </Flex>
+            <CommandsList />
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -523,8 +536,8 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {columnCategories[selectedCell.colIndex]}:
-            {rowPoints[selectedCell.rowIndex]}
+            {columnCategories[selectedCell.colIndex as number]}:
+            {rowPoints[selectedCell.rowIndex as number]}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -535,29 +548,20 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                     <FormControl>
                       <FormLabel>Question</FormLabel>
                       <Textarea
-                        value={
-                          rows[selectedCell.rowIndex][selectedCell.colIndex]
-                            .question
-                        }
+                        value={currentCell?.question}
                         onChange={handleQuestionChange}
                       />
                     </FormControl>
                     <FormControl>
                       <FormLabel>Answer</FormLabel>
                       <Textarea
-                        value={
-                          rows[selectedCell.rowIndex][selectedCell.colIndex]
-                            .answer
-                        }
+                        value={currentCell?.answer}
                         onChange={handleAnswerChange}
                       />
                     </FormControl>
                   </HStack>
                   <Checkbox
-                    isChecked={
-                      rows[selectedCell.rowIndex][selectedCell.colIndex]
-                        .doublePoints
-                    }
+                    isChecked={currentCell?.doublePoints}
                     onChange={handleCheckChange}
                   >
                     Double Points

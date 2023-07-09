@@ -1,8 +1,14 @@
 import { Button } from "@chakra-ui/react";
+import useSound from "use-sound";
 
 interface IBuzzerButton {}
 export default function BuzzerButton({}: IBuzzerButton) {
-  function handlePlayBuzz() {}
+  const [play, jeopardyFx] = useSound("/sounds/jeopardy.mp3", {
+    interrupt: true,
+  });
+  function handlePlayBuzz() {
+    play();
+  }
   return (
     <Button
       onClick={handlePlayBuzz}
