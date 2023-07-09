@@ -497,8 +497,10 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
             display={"flex"}
             justifyContent={"center"}
             textAlign={"center"}
+            maxH={"550px"}
+            overflow={"scroll"}
           >
-            <Flex id="main-title-flex" mt={"6%"}>
+            <Flex id="main-title-flex" mt={"8%"}>
               {!isEdit && (
                 <>
                   {selectedCell.rowIndex !== null &&
