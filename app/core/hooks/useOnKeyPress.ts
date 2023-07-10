@@ -3,14 +3,15 @@ import { useEffect } from "react";
 type Options = {
   key: string;
   onPress: () => void;
+  skip?: any;
 };
 
 const useOnKeyPress = (options: Options) => {
-  const { key, onPress } = options;
+  const { key, onPress, skip } = options;
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key === key) {
+      if (event.key === key && !skip) {
         onPress();
       }
     };

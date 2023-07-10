@@ -31,30 +31,33 @@ import {
   ButtonGroup,
   useToast,
   UseToastOptions,
+  Divider,
 } from "@chakra-ui/react";
 import Team from "../Team";
 import {
   ICell,
   IHoveredCell,
   ISelectedCell,
-  TriviaState,
   initialState,
   reducer,
 } from "./reducer";
-import { useRouter } from "next/navigation";
 import { copyToClipboard } from "@/app/core/helpers";
 import { familyGame, quickGame } from "@/app/core/games";
 import GameHelperText from "../GameHelperText";
 import useOnKeyPress from "@/app/core/hooks/useOnKeyPress";
 import { useGameTimer } from "@/app/core/hooks/useGameTimer";
 import CommandsList from "../CommandsList";
+import { ActionSheet } from "../ActionSheet";
+import useSound from "use-sound";
+import HowToPlay from "../HowToPlay";
+import HowToEdit from "../HowToEdit";
 
 export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const [state, dispatch] = useReducer(
     reducer,
     // quickGame
-    familyGame
-    // JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
+    // familyGame
+    JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
   );
   const {
     selectedCell,
@@ -94,28 +97,68 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   const editModal = useDisclosure();
   const jeopardyCardModal = useDisclosure();
+  const infoSideBar = useDisclosure();
   const toast = useToast();
   const { startTimer, timer, pauseTime, restartTimer } = useGameTimer({
     time: 15,
   });
+  const [playIncorrect, incorrectFx] = useSound("/sounds/spongebob-fail.mp3", {
+    interrupt: false,
+  });
 
-  useOnKeyPress({ key: "s", onPress: handleStartTimer });
-  useOnKeyPress({ key: "p", onPress: pauseTime });
-  useOnKeyPress({ key: "r", onPress: restartTimer });
+  function onXPress() {
+    playIncorrect();
+    console.log("log: x");
+  }
 
-  const currentCellCb = useCallback(() => {
-    return selectedCell.rowIndex !== null && selectedCell.colIndex !== null
+  function stopAllSounds() {
+    incorrectFx.stop();
+  }
+
+  useOnKeyPress({
+    key: "x",
+    onPress: onXPress,
+    skip: !jeopardyCardModal.isOpen,
+  });
+  useOnKeyPress({
+    key: "s",
+    onPress: handleStartTimer,
+    skip: !jeopardyCardModal.isOpen,
+  });
+  useOnKeyPress({
+    key: "p",
+    onPress: pauseTime,
+    skip: !jeopardyCardModal.isOpen,
+  });
+  useOnKeyPress({
+    key: "r",
+    onPress: restartTimer,
+    skip: !jeopardyCardModal.isOpen,
+  });
+  useOnKeyPress({
+    key: "i",
+    onPress: handleToggleInfoBar,
+    // skip: !jeopardyCardModal.isOpen, // TODO
+  });
+
+  const currentCell =
+    selectedCell.rowIndex !== null && selectedCell.colIndex !== null
       ? rows[selectedCell.rowIndex][selectedCell.colIndex]
       : null;
-  }, [selectedCell]);
-
-  const currentCell = currentCellCb();
-  console.log(currentCell);
 
   function handleStartTimer() {
     startTimer();
     // TODO:
   }
+
+  function handleToggleInfoBar() {
+    if (infoSideBar.isOpen) {
+      infoSideBar.onClose();
+    } else {
+      infoSideBar.onOpen();
+    }
+  }
+
   function onTeamNameChange({ name, index }: { name: string; index: number }) {
     const newTeams = [...teams];
     newTeams[index].name = name;
@@ -152,6 +195,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
       handleAnsweredByChange({ index: null });
     }
     setShowAnswer(false);
+    stopAllSounds();
     jeopardyCardModal.onClose();
   }
 
@@ -214,12 +258,12 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     setRowPoints(newRowPoints);
   }
 
-  function handleClearForm() {
-    const { rowIndex, colIndex } = selectedCell;
-    const newRows = JSON.parse(JSON.stringify(rows));
-    newRows[rowIndex || ""][colIndex || ""] = { question: "", answer: "" };
-    setRows(newRows);
+  function handleReset() {
+    resetState();
+    window.location.reload(); // TODO: not optimal
+    // setRowPoints(initialState.rowPoints); TODO: look into
   }
+
   function handleCheckChange(e: any) {
     const { rowIndex, colIndex } = selectedCell;
     const newRows = JSON.parse(JSON.stringify(rows));
@@ -228,6 +272,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     }
     setRows(newRows);
   }
+
   function handleQuestionChange(e: any) {
     const { rowIndex, colIndex } = selectedCell;
     const newRows = JSON.parse(JSON.stringify(rows));
@@ -301,6 +346,25 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   return (
     <>
+      {isEdit && (
+        <HStack w="100%" display={"flex"} justifyContent={"center"}>
+          <Button isDisabled={rows.length === 5} w="200px" onClick={addRow}>
+            Add Row
+          </Button>
+          <Button isDisabled={rows.length === 1} w="200px" onClick={removeRow}>
+            Remove Row
+          </Button>
+          <Button isDisabled={columns === 5} w="200px" onClick={addColumn}>
+            Add Column
+          </Button>
+          <Button isDisabled={columns === 1} w="200px" onClick={removeColumn}>
+            Remove Column
+          </Button>
+          <Button w="200px" onClick={handleReset}>
+            Reset
+          </Button>
+        </HStack>
+      )}
       <Grid
         h="100vh"
         w="100vw"
@@ -315,10 +379,12 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
         {/* Placeholder box for top left corner */}
         {isEdit && (
           <Box>
+            {/* 
+            // TODO
             <ButtonGroup>
               <Button onClick={handleEndGame}>End Game</Button>
               <Button onClick={handleCopyGame}>Copy Game</Button>
-            </ButtonGroup>
+            </ButtonGroup> */}
           </Box>
         )}
         {columnCategories.map((category: string, colIndex: number) => (
@@ -417,31 +483,57 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
             <Icon name="plus" onClick={handleAddTeam} />
           </HStack>
         )}
-        {!isEdit &&
-          teams.map((team, index) => {
-            return (
-              <HStack>
-                <Icon name="minus" onClick={() => handleSubtractTeam(index)} />
-                <Team
-                  name={team.name}
-                  score={team.score}
-                  onNameChange={(name) => onTeamNameChange({ index, name })}
-                  onScoreChange={(score, type) =>
-                    onTeamScoreChange({ index, score, type })
-                  }
-                  points={rowPoints[selectedCell.rowIndex || 0] || 100}
-                />
-              </HStack>
-            );
-          })}
-        {isEdit && (
-          <Box>
-            <button onClick={addRow}>Add Row</button>
-            <button onClick={removeRow}>Remove Row</button>
-            <button onClick={addColumn}>Add Column</button>
-            <button onClick={removeColumn}>Remove Column</button>
-          </Box>
+
+        {!isEdit && (
+          <HStack position={"absolute"} w="100%" bottom="0">
+            {teams.map((team, index) => {
+              return (
+                <VStack key={`${team.name}${index}`}>
+                  <Team
+                    name={team.name}
+                    score={team.score}
+                    onTeamAnswered={() => {
+                      handleAnsweredByChange({ index });
+                    }}
+                    onNameChange={(name) => onTeamNameChange({ index, name })}
+                    onScoreChange={(score, type) =>
+                      onTeamScoreChange({
+                        type,
+                        index,
+                        score:
+                          score *
+                          // @ts-ignore
+                          (rows[selectedCell.rowIndex][selectedCell.colIndex]
+                            .doublePoints
+                            ? 2
+                            : 1),
+                      })
+                    }
+                    points={rowPoints[selectedCell.rowIndex || 0] || 100}
+                  />
+                </VStack>
+              );
+            })}
+          </HStack>
         )}
+
+        <ActionSheet {...infoSideBar}>
+          <Box color="white" mt={10}>
+            <Heading>Commands</Heading>
+            <CommandsList />
+          </Box>
+          <Divider py={2} />
+          <Box color="white" mt={10}>
+            <Heading>How to play</Heading>
+            <HowToPlay />
+          </Box>
+          <Divider py={2} />
+
+          <Box color="white" mt={10}>
+            <Heading>How to Edit</Heading>
+            <HowToEdit />
+          </Box>
+        </ActionSheet>
       </Grid>
       <Modal
         id="jeopardy card modal"
@@ -455,40 +547,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
             <ModalCloseButton autoFocus={false} />
             <VStack>
               <GameHelperText />
-
-              <HStack w="100%" justifyContent={"flex-end"} mr={10}>
-                {teams.map((team, index) => {
-                  return (
-                    <VStack key={`${team.name}${index}`}>
-                      <Team
-                        name={team.name}
-                        score={team.score}
-                        onTeamAnswered={() => {
-                          handleAnsweredByChange({ index });
-                        }}
-                        onNameChange={(name) =>
-                          onTeamNameChange({ index, name })
-                        }
-                        onScoreChange={(score, type) =>
-                          onTeamScoreChange({
-                            type,
-                            index,
-                            score:
-                              score *
-                              // @ts-ignore
-                              (rows[selectedCell.rowIndex][
-                                selectedCell.colIndex
-                              ].doublePoints
-                                ? 2
-                                : 1),
-                          })
-                        }
-                        points={rowPoints[selectedCell.rowIndex || 0] || 100}
-                      />
-                    </VStack>
-                  );
-                })}
-              </HStack>
             </VStack>
           </ModalHeader>
 
@@ -530,7 +588,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                 </>
               )}
             </Flex>
-            <CommandsList />
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -578,9 +635,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
               )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={handleClearForm}>
-              Clear
-            </Button>
             <Button variant="ghost" mr={3} onClick={editModal.onClose}>
               Save
             </Button>

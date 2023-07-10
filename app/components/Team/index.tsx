@@ -42,7 +42,7 @@ export default function Team({
       <HStack justify={"center"}>
         <Editable
           textAlign={"center"}
-          fontSize={"xl"}
+          fontSize="md"
           // isDisabled={!isEdit}
           color={"white"}
           defaultValue={name}
@@ -59,16 +59,18 @@ export default function Team({
           />
         </Editable>
         {!!onTeamAnswered && (
-          <Button onClick={() => onTeamAnswered(name)}>answered!</Button>
+          <Button size={"sm"} onClick={() => onTeamAnswered(name)}>
+            answered!
+          </Button>
         )}
       </HStack>
       <VStack>
-        <Text fontSize="xl">{`Score: ${score}`}</Text>
+        <Text fontSize="md">{`Score: ${score}`}</Text>
         <HStack spacing={4}>
-          <Button onClick={incrementScore} colorScheme="green">
+          <Button size={"sm"} onClick={incrementScore} colorScheme="green">
             Increment
           </Button>
-          <Button onClick={decrementScore} colorScheme="red">
+          <Button size={"sm"} onClick={decrementScore} colorScheme="red">
             Decrement
           </Button>
         </HStack>
