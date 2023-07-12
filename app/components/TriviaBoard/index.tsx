@@ -32,6 +32,7 @@ import {
   useToast,
   UseToastOptions,
   Divider,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import Team from "../Team";
 import {
@@ -59,6 +60,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     // familyGame
     JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
   );
+
   const {
     selectedCell,
     hoveredCell,
@@ -90,6 +92,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const resetState = () => dispatch({ type: "RESET", payload: undefined });
 
   const [showAnswer, setShowAnswer] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [teams, setTeams] = useState([
     { name: "Team 1", score: 0 },
     { name: "Team 2", score: 0 },
@@ -105,15 +108,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const [playIncorrect, incorrectFx] = useSound("/sounds/spongebob-fail.mp3", {
     interrupt: false,
   });
-
-  function onXPress() {
-    playIncorrect();
-    console.log("log: x");
-  }
-
-  function stopAllSounds() {
-    incorrectFx.stop();
-  }
 
   useOnKeyPress({
     key: "x",
@@ -138,13 +132,26 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   useOnKeyPress({
     key: "i",
     onPress: handleToggleInfoBar,
-    // skip: !jeopardyCardModal.isOpen, // TODO
+    skip: editModal.isOpen || isFocused, // TODO
   });
 
   const currentCell =
     selectedCell.rowIndex !== null && selectedCell.colIndex !== null
       ? rows[selectedCell.rowIndex][selectedCell.colIndex]
       : null;
+
+  const fontSize = useBreakpointValue({
+    base: "2xl",
+    md: "4xl",
+    lg: "6xl",
+  });
+  function onXPress() {
+    playIncorrect();
+  }
+
+  function stopAllSounds() {
+    incorrectFx.stop();
+  }
 
   function handleStartTimer() {
     startTimer();
@@ -397,6 +404,14 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
               >
                 <EditablePreview />
                 <EditableInput
+                  onFocus={() => {
+                    setIsFocused(true);
+                    console.log("log: focused");
+                  }}
+                  onBlurCapture={() => {
+                    setIsFocused(false);
+                    console.log("log: blur");
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       handleCategoryChange(e, colIndex);
@@ -423,6 +438,14 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
               >
                 <EditablePreview />
                 <EditableInput
+                  onFocus={() => {
+                    setIsFocused(true);
+                    console.log("log: focused");
+                  }}
+                  onBlurCapture={() => {
+                    setIsFocused(false);
+                    console.log("log: blur");
+                  }}
                   type="number"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -550,15 +573,14 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
             </VStack>
           </ModalHeader>
 
-          <ModalBody
-            id="main-title-modal-body"
-            display={"flex"}
-            justifyContent={"center"}
-            textAlign={"center"}
-            maxH={"550px"}
-            overflow={"scroll"}
-          >
-            <Flex id="main-title-flex" mt={"8%"}>
+          <ModalBody id="main-title-modal-body">
+            <Flex
+              id="main-title-flex"
+              direction="column"
+              justify="center"
+              align="center"
+              height="100vh"
+            >
               {!isEdit && (
                 <>
                   {selectedCell.rowIndex !== null &&
@@ -568,7 +590,11 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                           <Heading>DAILY DOUBLE!</Heading>
                         )}
                         <Box id="main-title-box">
-                          <Heading id="main-title" fontSize={"6xl"}>
+                          <Heading
+                            id="main-title"
+                            textAlign={"center"}
+                            fontSize={fontSize}
+                          >
                             {showAnswer
                               ? rows[selectedCell.rowIndex][
                                   selectedCell.colIndex
@@ -578,10 +604,10 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                                 ].question}
                           </Heading>
                         </Box>
-                        <Heading mt={10}>{timer}</Heading>
-
-                        <Heading mt={10}>{selectedCell.score}</Heading>
-
+                        <VStack position={"absolute"} top={20}>
+                          <Heading>Timer</Heading>
+                          <Heading>{timer}</Heading>
+                        </VStack>
                         <Heading>{currentCell?.answeredBy}</Heading>
                       </VStack>
                     )}

@@ -15,7 +15,7 @@ export default function CommandsList() {
         return (
           <HStack w="60%" color="white" p={2}>
             <Text fontSize={"md"}>{command[0]}</Text>{" "}
-            <Kbd color="primary.900" fontSize={"md"}>
+            <Kbd color="white" fontSize={"md"}>
               {command[1]}
             </Kbd>
             <Text fontSize={"md"}>{command[2]}</Text>
