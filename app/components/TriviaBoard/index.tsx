@@ -66,11 +66,9 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   const [state, dispatch] = useReducer(
     reducer,
     // quickGame
-    // familyGame
+    familyGame
     // friendsGivingGame,
-    // JSON.parse(localStorage.getItem("appState") || JSON.stringify(friendsGivingGame))
-    JSON.parse(JSON.stringify(friendsGivingGame))
-
+    // JSON.parse(localStorage.getItem("appState") || '')
   );
 
   const {
