@@ -50,7 +50,6 @@ export default function Team({
           <EditablePreview />
           <EditableInput
             onKeyDown={(e) => {
-              console.log("log: key pressed", e.key);
               if (e.key === "Enter") {
                 handleNameChange(e);
               }

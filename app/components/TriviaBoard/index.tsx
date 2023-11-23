@@ -33,6 +33,7 @@ import {
   UseToastOptions,
   Divider,
   useBreakpointValue,
+  IconButton,
 } from "@chakra-ui/react";
 import Team from "../Team";
 import {
@@ -43,7 +44,7 @@ import {
   reducer,
 } from "./reducer";
 import { copyToClipboard } from "@/app/core/helpers";
-import { familyGame, quickGame } from "@/app/core/games";
+import { friendsGivingGame, familyGame, quickGame } from "@/app/core/games";
 import GameHelperText from "../GameHelperText";
 import useOnKeyPress from "@/app/core/hooks/useOnKeyPress";
 import { useGameTimer } from "@/app/core/hooks/useGameTimer";
@@ -52,13 +53,24 @@ import { ActionSheet } from "../ActionSheet";
 import useSound from "use-sound";
 import HowToPlay from "../HowToPlay";
 import HowToEdit from "../HowToEdit";
+import { AddIcon, MinusIcon, PlusSquareIcon } from "@chakra-ui/icons";
+import useCachedState from "@/app/core/hooks/useCachedState";
 
+const initialTeam = [
+  { name: "Team 1", score: 0 },
+  { name: "Team 2", score: 0 },
+]
 export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
+  const [_, setCachedState] = useCachedState('appState', initialState)
+  const [cachedTeam, setCachedTeam] = useCachedState('teamState', initialTeam)
   const [state, dispatch] = useReducer(
     reducer,
     // quickGame
     // familyGame
-    JSON.parse(localStorage.getItem("appState") || JSON.stringify(initialState))
+    // friendsGivingGame,
+    // JSON.parse(localStorage.getItem("appState") || JSON.stringify(friendsGivingGame))
+    JSON.parse(JSON.stringify(friendsGivingGame))
+
   );
 
   const {
@@ -93,10 +105,7 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   const [showAnswer, setShowAnswer] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [teams, setTeams] = useState([
-    { name: "Team 1", score: 0 },
-    { name: "Team 2", score: 0 },
-  ]);
+  const [teams, setTeams] = useState(cachedTeam);
 
   const editModal = useDisclosure();
   const jeopardyCardModal = useDisclosure();
@@ -106,9 +115,17 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     time: 15,
   });
   const [playIncorrect, incorrectFx] = useSound("/sounds/spongebob-fail.mp3", {
+    interrupt: true,
+  });
+  const [playCorrect, correctFx] = useSound("/sounds/success.mp3", {
     interrupt: false,
   });
 
+  useOnKeyPress({
+    key: "c",
+    onPress: onCPress,
+    skip: !jeopardyCardModal.isOpen,
+  });
   useOnKeyPress({
     key: "x",
     onPress: onXPress,
@@ -134,6 +151,11 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     onPress: handleToggleInfoBar,
     skip: editModal.isOpen || isFocused, // TODO
   });
+  useOnKeyPress({
+    key: "z",
+    onPress: stopAllSounds,
+    skip: !jeopardyCardModal.isOpen,
+  });
 
   const currentCell =
     selectedCell.rowIndex !== null && selectedCell.colIndex !== null
@@ -145,12 +167,19 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
     md: "4xl",
     lg: "6xl",
   });
+
   function onXPress() {
     playIncorrect();
   }
 
+
+  function onCPress() {
+    playCorrect();
+  }
+
   function stopAllSounds() {
     incorrectFx.stop();
+    correctFx.stop();
   }
 
   function handleStartTimer() {
@@ -321,7 +350,6 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
 
   function handleCopyGame() {
     copyToClipboard(JSON.stringify(state));
-    const options: UseToastOptions = {};
     toast({
       position: "top",
       colorScheme: "green",
@@ -348,8 +376,13 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
   }, [jeopardyCardModal.isOpen, toggleShowAnswer]);
 
   useEffect(() => {
-    localStorage.setItem("appState", JSON.stringify(state));
+    setCachedState(state)
   }, [state]);
+
+  useEffect(() => {
+    setCachedTeam(teams);
+  }, [teams]);
+
 
   return (
     <>
@@ -369,6 +402,9 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
           </Button>
           <Button w="200px" onClick={handleReset}>
             Reset
+          </Button>
+          <Button w="200px" onClick={handleCopyGame}>
+            Copy JSON
           </Button>
         </HStack>
       )}
@@ -406,11 +442,9 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                 <EditableInput
                   onFocus={() => {
                     setIsFocused(true);
-                    console.log("log: focused");
                   }}
                   onBlurCapture={() => {
                     setIsFocused(false);
-                    console.log("log: blur");
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -440,11 +474,9 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                 <EditableInput
                   onFocus={() => {
                     setIsFocused(true);
-                    console.log("log: focused");
                   }}
                   onBlurCapture={() => {
                     setIsFocused(false);
-                    console.log("log: blur");
                   }}
                   type="number"
                   onKeyDown={(e) => {
@@ -473,8 +505,8 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                     ? "secondary.500"
                     : hoveredCell.row === rowIndex &&
                       hoveredCell.col === colIndex
-                    ? "secondary.500" // hovered cell color
-                    : "primary.700" // non-hovered cell color
+                      ? "secondary.500" // hovered cell color
+                      : "primary.700" // non-hovered cell color
                 }
                 border={`1px solid black`} // border color
                 key={`${rowIndex}-${colIndex}`}
@@ -493,8 +525,8 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                     {isAnswered
                       ? `${cell.answeredBy}\n${cell.answer}`
                       : isEdit
-                      ? cell.question || rowPoints[rowIndex]
-                      : rowPoints[rowIndex]}
+                        ? cell.question || rowPoints[rowIndex]
+                        : rowPoints[rowIndex]}
                   </Text>
                 </Flex>
               </GridItem>
@@ -502,16 +534,21 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
           }),
         ])}
         {!isEdit && (
-          <HStack>
-            <Icon name="plus" onClick={handleAddTeam} />
-          </HStack>
+          <IconButton
+            w="40px"
+            aria-label="plus"
+            colorScheme='blue'
+            onClick={handleAddTeam}
+            icon={<AddIcon />}
+            isDisabled={teams.length === 5}
+          />
         )}
 
         {!isEdit && (
-          <HStack position={"absolute"} w="100%" bottom="0">
+          <HStack position={"absolute"} left={'5%'} w="100%" bottom="0">
             {teams.map((team, index) => {
               return (
-                <VStack key={`${team.name}${index}`}>
+                <VStack key={`${team.name}${index}`} position={'relative'}>
                   <Team
                     name={team.name}
                     score={team.score}
@@ -533,6 +570,15 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                       })
                     }
                     points={rowPoints[selectedCell.rowIndex || 0] || 100}
+                  />
+                  <IconButton
+                    aria-label="minus"
+                    colorScheme='red'
+                    position={'absolute'}
+                    right={0}
+                    onClick={() => handleSubtractTeam(index)}
+                    icon={<MinusIcon boxSize={2} />}
+                    isDisabled={teams.length === 2}
                   />
                 </VStack>
               );
@@ -597,11 +643,11 @@ export const TriviaBoard = ({ isEdit }: { isEdit?: boolean }) => {
                           >
                             {showAnswer
                               ? rows[selectedCell.rowIndex][
-                                  selectedCell.colIndex
-                                ].answer
+                                selectedCell.colIndex
+                              ].answer
                               : rows[selectedCell.rowIndex][
-                                  selectedCell.colIndex
-                                ].question}
+                                selectedCell.colIndex
+                              ].question}
                           </Heading>
                         </Box>
                         <VStack position={"absolute"} top={20}>

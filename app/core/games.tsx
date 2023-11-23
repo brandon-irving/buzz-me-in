@@ -294,3 +294,60 @@ export const familyGame = {
   hoveredCell: { row: null, col: null },
   selectedCell: { rowIndex: 1, colIndex: 4, score: 200 },
 };
+
+export const friendsGivingGame = {
+  rows: [
+    // Level 1 (100 points)
+    [
+      { question: "What is the formula for velocity?", answer: "v=d/t" },
+      { question: "Which of Shakespeare's plays has a curse attached to it?", answer: "Macbeth" },
+      { question: "Who was the first emperor of Rome?", answer: "Augustus" },
+      { question: "What is Luffy from One Piece full name?", answer: "Monkey D. Luffy" },
+      { question: "Who is known as the 'Godfather of Soul' in music?", answer: "James Brown" }
+    ],
+    // Level 2 (200 points)
+    [
+      { question: "Where does the flash draw his powers from?", answer: "The Speed Force" },
+      { question: "What does DNA stand for?", answer: "Deoxyribonucleic acid" },
+      { question: "Which war was fought between the North and South regions in the United States?", answer: "The Civil War" },
+      { question: "What is the name of the seed used to restore a persons energy in Dragon Ball Z?", answer: "Senzu Bean" },
+      { question: "What is the name of Destiny’s Child’s best-selling album, released in 2001?", answer: "Survivor" }
+    ],
+    // Level 3 (300 points)
+    [
+      { question: "Who is the first African American superhero in the DC Universe?", answer: "John Stewart (Green Lantern)" },
+      { question: "Who proposed the theory of evolution?", answer: "Charles Darwin" },
+      { question: "Who said, 'injustice anywhere is a threat to justice everywhere'?", answer: "Martn Luther King, Jr" },
+      { question: "What is the Killua's last name?", answer: "Zoldyck" },
+      {
+        question: `Which song has the lyrics '
+      Attention, all y'all players and pimps (Shake it fast)
+      Right now in the place to be
+      I thought I told y'all dudes before
+      Y'all dudes can't mess with me (Watch yourself)'?
+      `, answer: "Mysikal"
+      }
+    ],
+    // Level 4 (400 points)
+    [
+      { question: "When Thor loses Mjölnir, what is the name of the axe he replaces it with?", answer: "Storm Breaker" },
+      { question: "What is the hardest substance in the human body", answer: "Tooth enamel" },
+      { question: "Who was the first female Prime Minister of the United Kingdom?", answer: "Margaret Thatcher" },
+      { question: "In Assassanation classroom, what is the name of the android who joins as a student?", answer: "Ritsu" },
+      { question: "Finish the lyrics: 'Nigga why you babysittin' only two or three shots?'", answer: "I'ma show you how to turn it up a notch" }
+    ],
+    // Level 5 (500 points)
+    [
+      { question: "What is Poison Ivy's real name", answer: "Pamela Lillian Isley" },
+      { question: "What is the longest cell in the human body", answer: "Nerve cell (Neuron)" },
+      { question: "Who was the leader of the Soviet Union during World War II?", answer: "Joseph Stalin" },
+      { question: "What is the first rule in the death note?", answer: "The human whose name is written in this note shall die." },
+      { question: "What song has the following lyrics? This that rhythm, this that lightning, This that burn, this ain't no perm", answer: "MY POWER: Beyonce" }
+    ]
+  ],
+  rowPoints: [100, 200, 300, 400, 500],
+  columnCategories: ["Marvel/DC", "Biology", "History", "Anime", "Hip-Hop and R&B"],
+  columns: 5,
+  hoveredCell: { row: null, col: null },
+  selectedCell: { rowIndex: 1, colIndex: 4, score: 200 },
+};
